@@ -11,31 +11,6 @@ class Preprocessing:
         self.save_path = save_path
         self.columns_name = ['chr', 'strand', 't5', 't3', 'ypd', 'gal', 'type', 'name']
 
-    # def read_bin_data(self):
-    #     f_ori = open(self.file_name, 'r')
-    #     count = 0
-    #     columns_name = ['chr', 'strand', 't5', 't3', 'ypd', 'gal', 'type', 'name']
-    #     data = pd.DataFrame(index=None, columns=columns_name)
-    #
-    #     for line in f_ori.readlines():
-    #         if count % 1000 == 0:
-    #             print(count)
-    #         line_list = line.split()
-    #         res = line_list[:6]
-    #         temp = ""
-    #         for idx, ele in enumerate(line_list[6:]):
-    #             if idx == len(line_list) - 7:
-    #                 res.append(temp.rstrip())
-    #                 res.append(ele)
-    #             else:
-    #                 temp = temp + ele + " "
-    #         data.loc[len(data)] = res
-    #         count += 1
-    #     f_ori.close()
-    #     data.columns = data.loc[0]
-    #     data = data[1:]
-    #     data.to_csv(self.save_path + os.path.sep + "data.csv", index=None)
-
     def read_bin_data(self):
         f_ori = open(self.file_name, 'r')
         count = 0
@@ -69,27 +44,27 @@ class Preprocessing:
 
         genes = list(set(data_all["name"]))
         print(len(genes))
-        # result = []
-        # count = 0
-        #
-        # for gene in genes:
-        #     if count % 500 == 0:
-        #         print("count: ", count)
-        #     max_ypd = data_all[(data_all["name"] == gene) & (data_all["type"] == "Covering one intact ORF")]
-        #     if max_ypd.empty is False:
-        #         max_ypd = max_ypd[max_ypd["ypd"] == max_ypd["ypd"].max()]
-        #         result.append(max_ypd.values.tolist()[0])
-        #     count += 1
-        #
-        # result_unsort = pd.DataFrame(result, columns=self.columns_name)
-        # result_unsort = result_unsort.groupby("chr")
-        #
-        # result_sort = pd.DataFrame(index=None, columns=self.columns_name)
-        # for name, group in result_unsort:
-        #     group_sort = group.sort_values(by="t5")
-        #     result_sort = result_sort.append(group_sort, ignore_index=True)
-        # print("result shape:", result_sort.shape)
-        # result_sort.to_csv(self.save_path + os.path.sep + "genes002.csv", index=None)
+        result = []
+        count = 0
+
+        for gene in genes:
+            if count % 500 == 0:
+                print("count: ", count)
+            max_ypd = data_all[(data_all["name"] == gene) & (data_all["type"] == "Covering one intact ORF")]
+            if max_ypd.empty is False:
+                max_ypd = max_ypd[max_ypd["ypd"] == max_ypd["ypd"].max()]
+                result.append(max_ypd.values.tolist()[0])
+            count += 1
+
+        result_unsort = pd.DataFrame(result, columns=self.columns_name)
+        result_unsort = result_unsort.groupby("chr")
+
+        result_sort = pd.DataFrame(index=None, columns=self.columns_name)
+        for name, group in result_unsort:
+            group_sort = group.sort_values(by="t5")
+            result_sort = result_sort.append(group_sort, ignore_index=True)
+        print("result shape:", result_sort.shape)
+        result_sort.to_csv(self.save_path + os.path.sep + "genes002.csv", index=None)
 
     #  combine all of the genes' value data
     def chrom_all(self):
@@ -126,12 +101,12 @@ class Process:
         plt.plot(f1["start"], f1["val"])
         # plt.scatter(f1["start"], f1["size"])
         # plt.scatter(data["start"], data["size"], s=0.2)
-        for start in f2_part["t5"]:
-            plt.axvline(x=start, c="r", linestyle='dotted')
-        for end in f2_part["t3"]:
-            plt.axvline(x=end, c="b", linestyle='dashed')
-        plt.xlim([7000, 9100])
-        plt.ylim([0, 0.4])
+        # for start in f2_part["t5"]:
+        #     plt.axvline(x=start, c="r", linestyle='dotted')
+        # for end in f2_part["t3"]:
+        #     plt.axvline(x=end, c="b", linestyle='dashed')
+        plt.xlim()
+        plt.ylim()
         plt.savefig(self.save_path + os.path.sep + self.file_path_gene[-8:-4] + ".png", dpi=90, bbox_inches='tight')
         plt.close()
 
@@ -190,6 +165,6 @@ def run_process():
     file_name_genes = r'..\data\genes.csv'
     save_path = r"..\result"
     process = Process(file_path_gene, file_name_genes, save_path)
-    # process.plot_gene()
+    process.plot_gene()
     process.get_array_1000_row()
 

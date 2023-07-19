@@ -5,11 +5,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from sklearn import preprocessing
-
+from sklearn import metrics
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
-from tslearn.clustering import KShape
-from tslearn.preprocessing import TimeSeriesScalerMeanVariance
+# from tslearn.clustering import KShape
+# from tslearn.preprocessing import TimeSeriesScalerMeanVariance
 from sklearn.decomposition import PCA
 from scipy.ndimage import gaussian_filter1d
 
@@ -18,10 +18,20 @@ class Cluster:
     def __init__(self, data):
         self.data = data
         self.step = 10
+        self.score = 0
 
     def normalization(self):
+        self.data = self.data.rolling(window=self.step, win_type='gaussian', min_periods=1, axis='columns').mean(std=10)
+
+        # plt.figure(figsize=(20, 5))
+        # plt.plot(range(0, 1000), self.data.loc[0])
+        # plt.xlabel("BP")
+        # plt.ylabel("moving average")
+        # plt.show()
+        # plt.close()
+
         self.data = self.data.T
-        self.data = self.data.rolling(window=self.step, win_type='gaussian', min_periods=1).mean(std=10)
+
         # self.data = self.data.rolling(window=self.step, min_periods=1).mean()
         my_scaler = preprocessing.StandardScaler().fit(self.data)
         self.data = my_scaler.transform(self.data)
@@ -38,11 +48,13 @@ class Cluster:
             already set.
         """
         estimator2 = kmeans.fit_predict(self.data)
+        score = metrics.silhouette_score(self.data, estimator2)
+        self.score = score
 
         # plt.figure(figsize=(20, 5))
         # plt.plot(range(0, 1000), self.data.loc[0])
         # plt.xlabel("BP")
-        # plt.ylabel("Means Normalised Reads")
+        # plt.ylabel("Normalization and moving average")
         # plt.show()
         # plt.close()
 
@@ -133,18 +145,25 @@ class ResultAnalysis:
         plt.xlabel("BP")
         plt.ylabel("Means Normalised Reads")
 
-        plt.savefig(self.save_path + os.path.sep + self.method + ".png",
+        plt.savefig(self.save_path + os.path.sep + self.method + "_0707.png",
                     dpi=180,
                     bbox_inches='tight')
         plt.close()
 
 
-def run_benchmark(cluster_method="DBSCAN"):
-    n_digits = 10
+def run_benchmark(cluster_method="k-means++"):
+    n_digits = 4
     file_name = r'..\data\genes_arr_pd.csv'
     save_path = r"..\result"
     data_ori = pd.read_csv(file_name)
     data = data_ori.iloc[:, 8:]
+
+    # plt.figure(figsize=(20, 5))
+    # plt.plot(range(0, 1000), data.loc[0])
+    # plt.xlabel("BP")
+    # plt.ylabel("original signal")
+    # plt.show()
+    # plt.close()
 
     cluster = Cluster(data)
     cluster.normalization()
@@ -153,19 +172,39 @@ def run_benchmark(cluster_method="DBSCAN"):
 
     print(f"# digits: {n_digits}; # samples: {n_samples}; # features {n_features}")
     print(82 * "_")
+    # scores = []
+    # for i in range(4, 5):
+    #     cluster_methods = {
+    #                       "k-means++": KMeans(init="k-means++", n_clusters=n_digits, random_state=0),
+    #                       "random": KMeans(init="random", n_clusters=n_digits, random_state=0),
+    #                       "DBSCAN": DBSCAN(eps=30, min_samples=10)
+    #                       }
+    #     predict_labels = cluster.bench_k_means(kmeans=cluster_methods[cluster_method])
+    #     scores.append(cluster.score)
+    # print("scores: ", scores)
+
     cluster_methods = {
-                      "k-means++": KMeans(init="k-means++", n_clusters=n_digits, random_state=0),
-                      "random": KMeans(init="random", n_clusters=n_digits, random_state=0),
-                      "DBSCAN": DBSCAN(eps=30, min_samples=10),
-                      }
+        "k-means++": KMeans(init="k-means++", n_clusters=n_digits, random_state=0),
+        "random": KMeans(init="random", n_clusters=n_digits, random_state=0),
+        "DBSCAN": DBSCAN(eps=30, min_samples=10)
+    }
     predict_labels = cluster.bench_k_means(kmeans=cluster_methods[cluster_method])
+
+    # plt.figure(figsize=(8, 5))
+    # plt.plot(range(2, 12), scores)
+    # plt.scatar
+    # plt.xlabel("n_digits")
+    # plt.ylabel("silhouette_score")
+    # plt.show()
+    # plt.close()
 
     method = cluster_method + str(n_digits)
 
     data["predict labels"] = predict_labels
     predict_labels_data = data_ori.iloc[:, :9]
     predict_labels_data["predict labels"] = predict_labels
-    predict_labels_data.to_csv(save_path + os.path.sep + cluster_method + "_predict_result.csv", index=None)
+
+    # predict_labels_data.to_csv(save_path + os.path.sep + cluster_method + "_predict_result.csv", index=None)
 
     print(data.head())
 
